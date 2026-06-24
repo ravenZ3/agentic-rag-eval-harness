@@ -1,0 +1,93 @@
+name: Eval Regression Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  eval-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Start eval service
+        run: uv run uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
+          LANGCHAIN_TRACING_V2: "true"
+          LANGCHAIN_PROJECT: rag-eval-harness-ci
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+          WANDB_PROJECT: rag-eval-harness
+
+      - name: Wait for service ready
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/ && break || sleep 2
+          done
+
+      - name: Trigger eval run
+        id: trigger
+        run: |
+          RUN_ID=$(curl -sf -X POST http://localhost:8000/run \
+            -H "Content-Type: application/json" \
+            -d '{"golden_path": "dataset/golden_v1.yaml", "run_name": "ci-${{ github.sha }}"}' \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['run_id'])")
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Poll until complete
+        run: |
+          RUN_ID="${{ steps.trigger.outputs.run_id }}"
+          for i in $(seq 1 60); do
+            STATUS=$(curl -sf http://localhost:8000/runs/$RUN_ID \
+              | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+            echo "[$i/60] status=$STATUS"
+            if [ "$STATUS" = "complete" ]; then exit 0; fi
+            if [ "$STATUS" = "error" ]; then
+              curl -sf http://localhost:8000/runs/$RUN_ID | python3 -m json.tool
+              echo "Eval run errored" && exit 1
+            fi
+            sleep 15
+          done
+          echo "Timed out" && exit 1
+
+      - name: Assert no regression
+        run: |
+          python3 - <<'PYEOF'
+          import json, urllib.request, sys, os
+
+          run_id = os.environ["RUN_ID"]
+          resp = urllib.request.urlopen(f"http://localhost:8000/runs/{run_id}")
+          data = json.load(resp)
+          result = data.get("result", {})
+
+          GATES = {
+              "ragas/faithfulness": 0.70,
+              "ragas/answer_relevancy": 0.65,
+          }
+          failed = [
+              f"{m}={v:.3f} < floor={floor}"
+              for m, floor in GATES.items()
+              if (v := result.get(m)) is not None and v < floor
+          ]
+          if failed:
+              print("REGRESSION GATE FAILED:")
+              for f in failed: print(f"  {f}")
+              sys.exit(1)
+          print("All gates passed:", result)
+          PYEOF
+        env:
+          RUN_ID: ${{ steps.trigger.outputs.run_id }}

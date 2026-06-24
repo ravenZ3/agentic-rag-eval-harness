@@ -1,0 +1,541 @@
+# Golden Dataset v1 — Agentic RAG Eval Harness
+# 30 hand-curated items across 4 categories.
+# Distribution: 10 single_hop | 10 multi_hop | 5 unanswerable | 5 adversarial
+#
+# corpus_hash: update after running scripts/ingest_corpus.py
+# contexts: fill with actual retrieved passage content after first smoke run
+#
+# The adversarial and unanswerable cases are the moat — almost nobody builds these.
+# Multi-hop items with golden_trajectory are the highest-signal eval cases.
+
+corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+items:
+
+  # ─── SINGLE HOP (10 items) ──────────────────────────────────────────────────
+
+  - id: gold_001
+    question: "What is the transformer attention mechanism?"
+    ground_truth: >
+      The transformer attention mechanism computes a weighted sum of value vectors,
+      where weights are derived from the dot-product similarity between query and key vectors,
+      scaled and passed through a softmax. This allows each token to selectively attend
+      to all other tokens in the sequence.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline sanity check — agent should retrieve and answer in one step"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_002
+    question: "What is LoRA and how does it reduce GPU memory during fine-tuning?"
+    ground_truth: >
+      LoRA (Low-Rank Adaptation) freezes the pretrained model weights and injects trainable
+      low-rank decomposition matrices into each transformer layer. Instead of updating the
+      full weight matrix W, it learns two small matrices A and B such that the update is AB^T.
+      This reduces trainable parameters by orders of magnitude, cutting optimizer state and
+      gradient memory substantially.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline — should retrieve LoRA paper and answer directly"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_003
+    question: "What is knowledge distillation in deep learning?"
+    ground_truth: >
+      Knowledge distillation trains a compact student model to mimic a larger teacher model
+      by matching the teacher's soft output probabilities rather than hard labels.
+      The soft targets carry information about inter-class similarities that one-hot labels
+      discard, enabling the student to generalize better than training on labels alone.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline sanity check"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_004
+    question: "What is retrieval-augmented generation (RAG)?"
+    ground_truth: >
+      Retrieval-augmented generation (RAG) augments a language model by first retrieving
+      relevant documents from an external corpus, then conditioning the generator on both
+      the original query and the retrieved passages. This grounds generation in real evidence,
+      reducing hallucination and enabling the model to answer questions beyond its training data.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline — tests basic RAG self-knowledge"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_005
+    question: "What is the role of the feed-forward sublayer in a transformer block?"
+    ground_truth: >
+      The feed-forward sublayer in each transformer block applies two linear transformations
+      with a non-linearity (typically ReLU or GELU) in between, applied independently to each
+      position. It is thought to store factual associations learned during training and acts
+      as a key-value memory over the input representation.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "tests whether agent retrieves transformer architecture papers"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_006
+    question: "What is RLHF (reinforcement learning from human feedback)?"
+    ground_truth: >
+      RLHF fine-tunes a language model using human preference data. A reward model is first
+      trained on human comparisons of model outputs. The language model is then optimized
+      with PPO (proximal policy optimization) to maximize the reward model's score while
+      staying close to the original policy via a KL-divergence penalty.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline — single-concept retrieval"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_007
+    question: "What is the difference between encoder-only and decoder-only transformer architectures?"
+    ground_truth: >
+      Encoder-only models (e.g. BERT) process the full input bidirectionally, attending to
+      all tokens in both directions — suited for understanding tasks like classification and NER.
+      Decoder-only models (e.g. GPT) use causal (unidirectional) attention, only attending
+      to past tokens — suited for autoregressive generation. Encoder-decoder models (e.g. T5)
+      combine both for seq2seq tasks.
+    contexts: []
+    difficulty: medium
+    category: single_hop
+    failure_mode_targeted: "tests ability to retrieve and contrast architecture families"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_008
+    question: "What is Flash Attention and why is it faster than standard attention?"
+    ground_truth: >
+      Flash Attention is an IO-aware exact attention algorithm that restructures the attention
+      computation to minimize reads and writes to GPU HBM (high bandwidth memory). It tiles
+      the attention computation into blocks that fit in SRAM, avoiding the materialization of
+      the full N×N attention matrix. This reduces memory usage from O(N²) to O(N) and
+      achieves significant wall-clock speedups over standard attention, especially for long sequences.
+    contexts: []
+    difficulty: medium
+    category: single_hop
+    failure_mode_targeted: "tests retrieval of specific optimization paper"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_009
+    question: "What is a mixture-of-experts (MoE) layer in a language model?"
+    ground_truth: >
+      A mixture-of-experts layer replaces a single feed-forward sublayer with N parallel
+      expert networks and a learned router that activates only the top-k experts for each
+      token. This allows the model to scale parameter count without proportionally increasing
+      FLOPs, since only a fraction of parameters are active per forward pass.
+    contexts: []
+    difficulty: medium
+    category: single_hop
+    failure_mode_targeted: "tests single-document retrieval on a specific architecture concept"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_010
+    question: "What is in-context learning in large language models?"
+    ground_truth: >
+      In-context learning (ICL) is the ability of large language models to perform tasks
+      by conditioning on a few input-output examples provided in the prompt, without any
+      gradient updates. The model infers the task pattern from the prompt examples at
+      inference time. It emerges at scale and does not modify the model weights.
+    contexts: []
+    difficulty: easy
+    category: single_hop
+    failure_mode_targeted: "baseline — tests basic LLM capability concept retrieval"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  # ─── MULTI HOP (10 items) ───────────────────────────────────────────────────
+
+  - id: gold_011
+    question: "How does RLHF differ from supervised fine-tuning in terms of the training signal and the role of the reward model?"
+    ground_truth: >
+      Supervised fine-tuning (SFT) uses human-written demonstrations as direct training targets
+      with cross-entropy loss — the signal is whether the model produces the labeled output.
+      RLHF uses a reward model trained on human preference comparisons as an indirect signal:
+      PPO optimizes the policy to maximize reward scores rather than imitating fixed examples.
+      The reward model is the key differentiator — it generalizes human preferences to new
+      outputs that were never labeled, while SFT is limited to imitating the demonstration set.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "agent one-shots this without retrieving both SFT and RLHF sources"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve supervised fine-tuning mechanics and training signal"
+        expected_tool: "vector_search"
+      - goal: "retrieve RLHF reward model training and PPO optimization"
+        expected_tool: "vector_search"
+      - goal: "synthesize comparison of training signals"
+        expected_tool: null
+
+  - id: gold_012
+    question: "Compare retrieval strategies in RAG-Token vs RAG-Sequence and explain when each is preferred."
+    ground_truth: >
+      RAG-Sequence retrieves once per query and uses the same set of documents to generate
+      the entire output — simpler but the retrieved documents must cover the full answer.
+      RAG-Token retrieves at every generation step, allowing different tokens to be grounded
+      in different documents — more expressive but computationally expensive and harder to train.
+      RAG-Sequence is preferred when a single retrieval covers the query well; RAG-Token is
+      preferred for long-form outputs requiring diverse evidence across tokens.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "baits one-shot comparison; correct path retrieves each variant separately"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve RAG-Sequence model architecture and retrieval strategy"
+        expected_tool: "vector_search"
+      - goal: "retrieve RAG-Token model architecture and retrieval strategy"
+        expected_tool: "vector_search"
+      - goal: "synthesize comparison and use-case guidance"
+        expected_tool: null
+
+  - id: gold_013
+    question: "What architectural differences between BERT and GPT explain BERT's strength in understanding tasks and GPT's strength in generation?"
+    ground_truth: >
+      BERT is an encoder-only model trained with masked language modeling (MLM), which forces
+      bidirectional attention — every token attends to all others. This makes BERT representations
+      deeply contextualized, ideal for classification and span extraction.
+      GPT is a decoder-only model trained with causal (next-token) language modeling, attending
+      only to past tokens. This makes it naturally suited for left-to-right generation.
+      BERT cannot generate autoregressively; GPT cannot leverage right-context.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "adversarial — a confident-sounding one-shot answer is easy to fabricate here"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve BERT architecture and MLM training objective"
+        expected_tool: "vector_search"
+      - goal: "retrieve GPT architecture and causal LM training objective"
+        expected_tool: "vector_search"
+      - goal: "synthesize architectural comparison"
+        expected_tool: null
+
+  - id: gold_014
+    question: "How do LoRA and full fine-tuning differ in their effect on the model's weight matrices and generalization?"
+    ground_truth: >
+      Full fine-tuning updates all model weights, allowing complete adaptation but risking
+      catastrophic forgetting of pretrained knowledge and requiring storing a full model copy
+      per task. LoRA constrains updates to low-rank products of small matrices, preserving
+      most pretrained weights unchanged. This regularization often improves generalization on
+      low-data regimes and enables cheap multi-task serving by swapping adapter weights.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "requires retrieving both LoRA-specific paper and general fine-tuning literature"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve LoRA mechanism and its constraints on weight updates"
+        expected_tool: "vector_search"
+      - goal: "retrieve full fine-tuning behavior and catastrophic forgetting literature"
+        expected_tool: "vector_search"
+      - goal: "synthesize comparison of generalization effects"
+        expected_tool: null
+
+  - id: gold_015
+    question: "What are the tradeoffs between sparse retrieval (BM25) and dense retrieval (DPR) for RAG systems?"
+    ground_truth: >
+      BM25 is a term-frequency-based sparse retrieval method — fast, interpretable, requires
+      no training, and strong when the query shares exact vocabulary with the document.
+      DPR (Dense Passage Retrieval) encodes queries and passages into dense vectors using
+      fine-tuned encoders, capturing semantic similarity beyond vocabulary overlap.
+      DPR outperforms BM25 on open-domain QA benchmarks but requires training data and
+      an approximate nearest-neighbor index. Hybrid approaches that combine both often
+      outperform either alone.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "requires retrieving BM25 and DPR separately before comparing"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve BM25 sparse retrieval mechanics"
+        expected_tool: "vector_search"
+      - goal: "retrieve DPR dense retrieval architecture and training"
+        expected_tool: "vector_search"
+      - goal: "synthesize tradeoffs"
+        expected_tool: null
+
+  - id: gold_016
+    question: "How does speculative decoding speed up LLM inference and what is the role of the draft model?"
+    ground_truth: >
+      Speculative decoding uses a small, fast draft model to generate several candidate tokens,
+      then verifies them in parallel with the large target model using a single forward pass.
+      Tokens accepted by the target model are kept; the first rejected token triggers regeneration.
+      The speedup comes from replacing multiple sequential target-model forward passes with one
+      parallel verification pass, achieving 2-3x latency reduction with no output quality loss.
+    contexts: []
+    difficulty: medium
+    category: multi_hop
+    failure_mode_targeted: "requires retrieving speculative decoding paper and understanding the draft-model role"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve speculative decoding algorithm and acceptance criterion"
+        expected_tool: "vector_search"
+      - goal: "retrieve draft model design and its relationship to target model"
+        expected_tool: "vector_search"
+      - goal: "synthesize how draft model enables speedup"
+        expected_tool: null
+
+  - id: gold_017
+    question: "How does chain-of-thought prompting improve reasoning in LLMs, and what conditions are required for it to work?"
+    ground_truth: >
+      Chain-of-thought (CoT) prompting asks the model to generate intermediate reasoning steps
+      before producing a final answer. This improves performance on multi-step arithmetic,
+      commonsense, and symbolic reasoning tasks. CoT is most effective on large models
+      (typically >100B parameters) — smaller models do not reliably benefit and can produce
+      plausible but incorrect chains. Few-shot CoT provides example reasoning traces; zero-shot
+      CoT elicits reasoning with "Let's think step by step."
+    contexts: []
+    difficulty: medium
+    category: multi_hop
+    failure_mode_targeted: "requires retrieving CoT paper and scale requirements literature separately"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve chain-of-thought prompting mechanism and benchmark results"
+        expected_tool: "vector_search"
+      - goal: "retrieve scaling requirements and conditions for CoT effectiveness"
+        expected_tool: "vector_search"
+      - goal: "synthesize when and why CoT works"
+        expected_tool: null
+
+  - id: gold_018
+    question: "What are the key differences between PPO and DPO as alignment algorithms for LLMs?"
+    ground_truth: >
+      PPO (Proximal Policy Optimization) requires training a separate reward model and uses
+      online RL with policy gradient updates, making it complex and memory-intensive.
+      DPO (Direct Preference Optimization) re-frames preference learning as a supervised
+      classification problem on preference pairs, eliminating the reward model and online
+      RL entirely. DPO is simpler to implement and more stable, but requires offline
+      preference data and cannot incorporate real-time human feedback signals.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "requires separate retrieval of PPO-based RLHF and DPO papers"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve PPO-based RLHF training procedure"
+        expected_tool: "vector_search"
+      - goal: "retrieve DPO objective and training procedure"
+        expected_tool: "vector_search"
+      - goal: "synthesize algorithmic differences and tradeoffs"
+        expected_tool: null
+
+  - id: gold_019
+    question: "How does the training objective of masked language modeling (MLM) differ from causal language modeling (CLM), and how does this affect the learned representations?"
+    ground_truth: >
+      MLM (used in BERT) randomly masks input tokens and trains the model to predict them
+      using bidirectional context — all tokens attend to all others. CLM (used in GPT) trains
+      the model to predict each next token from only the preceding tokens using causal masking.
+      MLM produces deeply bidirectional representations rich in contextual information per token,
+      favoring discriminative tasks. CLM produces representations optimized for sequential
+      prediction, making the model naturally generative. MLM cannot be used for generation;
+      CLM representations see only left context at each position.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "requires retrieving MLM and CLM objectives from separate papers"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve masked language modeling objective and BERT training"
+        expected_tool: "vector_search"
+      - goal: "retrieve causal language modeling and GPT training"
+        expected_tool: "vector_search"
+      - goal: "synthesize effect on representations"
+        expected_tool: null
+
+  - id: gold_020
+    question: "What is the difference between token-level and sequence-level knowledge distillation for language models?"
+    ground_truth: >
+      Token-level distillation trains the student to match the teacher's per-token output
+      distribution at each position using KL divergence — it transfers the teacher's uncertainty
+      across the vocabulary at every step. Sequence-level distillation generates output sequences
+      from the teacher and trains the student on these as pseudo-labels, which is computationally
+      cheaper but loses the soft-label signal. Token-level is more information-dense but requires
+      a forward pass from the teacher for every training example.
+    contexts: []
+    difficulty: hard
+    category: multi_hop
+    failure_mode_targeted: "requires separate retrieval of token-level and sequence-level distillation methods"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve token-level knowledge distillation with KL divergence"
+        expected_tool: "vector_search"
+      - goal: "retrieve sequence-level distillation with teacher-generated pseudo-labels"
+        expected_tool: "vector_search"
+      - goal: "synthesize the information-efficiency tradeoff"
+        expected_tool: null
+
+  # ─── UNANSWERABLE (5 items) ─────────────────────────────────────────────────
+  # Correct behavior: agent retrieves, finds no relevant context, declines with
+  # "I cannot determine this from the available information."
+
+  - id: gold_021
+    question: "What was the weather in San Francisco on January 1, 2024?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: easy
+    category: unanswerable
+    failure_mode_targeted: "out-of-domain — no ML paper can answer this; agent must decline"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_022
+    question: "Who won the FIFA World Cup in 2022?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: easy
+    category: unanswerable
+    failure_mode_targeted: "out-of-domain sports fact — agent must not confabulate"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_023
+    question: "What is the exact number of parameters in GPT-4?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: medium
+    category: unanswerable
+    failure_mode_targeted: >
+      Tricky: agent may retrieve GPT-4 papers but the parameter count was never disclosed.
+      A correct agent retrieves, finds no definitive count, and declines rather than
+      guessing or citing unverified rumors.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_024
+    question: "What deep learning paper was published on March 15, 2019 at exactly 3:42pm?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: easy
+    category: unanswerable
+    failure_mode_targeted: "absurd precision question — agent must not fabricate a paper"
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_025
+    question: "What will be the dominant language model architecture in 2030?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: medium
+    category: unanswerable
+    failure_mode_targeted: >
+      Future-speculation question — no paper in the corpus can answer this.
+      Agent must decline rather than speculating. Tests whether the agent
+      distinguishes between 'no retrieved evidence' and 'can answer from prior knowledge'.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  # ─── ADVERSARIAL (5 items) ──────────────────────────────────────────────────
+  # Designed to bait confident one-shot answers. Correct behavior requires
+  # multi-step retrieval before synthesis.
+
+  - id: gold_026
+    question: "Compare sparse and dense attention — which is better?"
+    ground_truth: >
+      Neither is universally better. Dense attention (standard transformer) attends to all
+      token pairs — O(N²) complexity, most expressive for short sequences. Sparse attention
+      patterns (Longformer, BigBird) limit attention to local windows plus global tokens —
+      O(N) or O(N log N), enabling long-sequence processing at the cost of some expressiveness.
+      Dense is preferred when sequence length permits; sparse is necessary for documents,
+      genomics, or other long-context tasks. The comparison is context-dependent.
+    contexts: []
+    difficulty: hard
+    category: adversarial
+    failure_mode_targeted: >
+      "Which is better" framing baits a confident declarative answer.
+      Correct path retrieves both dense and sparse attention literature before
+      giving a nuanced comparison. Agent should not assert a winner without evidence.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve dense (full) attention complexity and use cases"
+        expected_tool: "vector_search"
+      - goal: "retrieve sparse attention patterns (Longformer, BigBird) and their tradeoffs"
+        expected_tool: "vector_search"
+      - goal: "synthesize context-dependent comparison"
+        expected_tool: null
+
+  - id: gold_027
+    question: "Is LoRA better than prefix tuning for parameter-efficient fine-tuning?"
+    ground_truth: >
+      It depends on the task and model size. LoRA injects low-rank weight updates into
+      attention matrices and often matches full fine-tuning on NLU and NLG benchmarks with
+      far fewer parameters. Prefix tuning prepends trainable virtual tokens to the input,
+      which can be more expressive for generation tasks but is harder to optimize and
+      sensitive to prefix length. Empirically LoRA is more consistently strong across tasks,
+      but prefix tuning has advantages in modular multi-task serving since no weights change.
+    contexts: []
+    difficulty: hard
+    category: adversarial
+    failure_mode_targeted: >
+      "Is X better than Y" framing invites an overconfident yes/no. Correct path retrieves
+      both methods' papers before comparing. Fabricating a winner without evidence is the
+      failure to catch.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve LoRA benchmark results and design tradeoffs"
+        expected_tool: "vector_search"
+      - goal: "retrieve prefix tuning mechanism and benchmark results"
+        expected_tool: "vector_search"
+      - goal: "synthesize task-dependent comparison"
+        expected_tool: null
+
+  - id: gold_028
+    question: "Does chain-of-thought prompting work on small language models?"
+    ground_truth: >
+      No — chain-of-thought prompting reliably improves reasoning only in large language
+      models (typically above ~100B parameters). On smaller models, CoT often produces
+      reasoning chains that are fluent but incorrect, sometimes performing worse than
+      direct answer prompting. This scale dependence is a key empirical finding from the
+      original CoT paper. Smaller models lack the capacity to reliably execute multi-step
+      reasoning in their intermediate steps.
+    contexts: []
+    difficulty: medium
+    category: adversarial
+    failure_mode_targeted: >
+      Question invites a confident yes or no. Correct answer is no, with scale caveat.
+      Agent that one-shots without retrieving may hallucinate a "yes" based on general CoT knowledge.
+      Tests whether retrieval grounds the scale-dependence claim.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve chain-of-thought paper scale requirements and small-model results"
+        expected_tool: "vector_search"
+      - goal: "synthesize scale-dependent finding"
+        expected_tool: null
+
+  - id: gold_029
+    question: "What is the best embedding model for semantic search in 2024?"
+    ground_truth: "unanswerable"
+    contexts: []
+    difficulty: medium
+    category: adversarial
+    failure_mode_targeted: >
+      "Best" is undefined and rapidly changing. The corpus contains papers on specific
+      embedding models but no definitive ranking for all use cases. Agent should retrieve
+      relevant papers but decline to name a single best model, citing that benchmarks
+      vary by domain and task. Fabricating a winner (e.g. "text-embedding-3-large is best")
+      without retrieved evidence is the targeted failure.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+
+  - id: gold_030
+    question: "How many layers does GPT-3 have and why was that number chosen?"
+    ground_truth: >
+      GPT-3 has 96 transformer layers (in the largest 175B parameter variant). The architecture
+      was scaled from GPT-2 following empirical scaling laws showing that compute-optimal
+      training requires scaling model size, dataset size, and training compute together.
+      The specific depth was chosen as part of a width-depth tradeoff to fit training on
+      available hardware. The 'why' beyond hardware and scaling law constraints was not
+      formally justified in the GPT-3 paper — it was an engineering decision.
+    contexts: []
+    difficulty: medium
+    category: adversarial
+    failure_mode_targeted: >
+      The "why" half of the question is partially unanswerable — the paper doesn't fully justify
+      the specific choice. Agent must retrieve GPT-3 architecture details but acknowledge
+      the 'why' is not fully documented, rather than fabricating a principled justification.
+    corpus_hash: "PLACEHOLDER_UPDATE_AFTER_INGEST"
+    golden_trajectory:
+      - goal: "retrieve GPT-3 architecture details and layer count"
+        expected_tool: "vector_search"
+      - goal: "retrieve scaling law literature motivating architecture choices"
+        expected_tool: "vector_search"
+      - goal: "synthesize answer acknowledging limits of documented justification"
+        expected_tool: null
