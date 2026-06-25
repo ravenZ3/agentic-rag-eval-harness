@@ -5,7 +5,7 @@ from pathlib import Path
 
 import wandb
 
-from eval.contracts import RagasResult, TrajectoryScore, JudgeResult
+from eval.contracts import RagasResult, TrajectoryScore, JudgeResult, OperationalRecord
 
 
 def _hash_file(path: str | Path) -> str:
@@ -23,6 +23,15 @@ def _clean(value: float | None) -> float | None:
     if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
         return None
     return float(value)
+
+
+def _p95(values: list) -> float | None:
+    filtered = [_clean(v) for v in values]
+    filtered = sorted(v for v in filtered if v is not None)
+    if not filtered:
+        return None
+    idx = max(0, int(len(filtered) * 0.95) - 1)
+    return filtered[idx]
 
 
 def _mean(values: list) -> float | None:
@@ -46,6 +55,7 @@ def compute_metrics(
     ragas: RagasResult,
     traj_scores: list[TrajectoryScore],
     judge_results: list[JudgeResult],
+    ops_records: list[OperationalRecord] | None = None,
 ) -> dict[str, float]:
     """Aggregate raw eval outputs into the flat metric dict that gets logged
     and fed to the regression gate. NaN-safe and empty-safe; never raises."""
@@ -68,6 +78,14 @@ def compute_metrics(
         "judge/hallucination": _mean([j.hallucination for j in judge_results]),
         "judge/goal_completion_raw": _mean([j.goal_completion for j in judge_results]),
     }
+    if ops_records:
+        metrics.update({
+            "ops/latency_ms_mean": _mean([r.latency_ms for r in ops_records]),
+            "ops/latency_ms_p95": _p95([r.latency_ms for r in ops_records]),
+            "ops/steps_per_question": _mean([r.steps_taken for r in ops_records]),
+            "ops/contexts_per_question": _mean([r.contexts_retrieved for r in ops_records]),
+            "ops/answer_length_chars": _mean([r.answer_length_chars for r in ops_records]),
+        })
     # Strip keys whose value couldn't be computed — never log None/NaN.
     return {k: v for k, v in metrics.items() if v is not None}
 
@@ -117,11 +135,12 @@ def log_run(
     config: dict,
     golden_path: str | Path = "dataset/golden_v1.yaml",
     run_name: str | None = None,
+    ops_records: list[OperationalRecord] | None = None,
 ) -> str | None:
     """Log a full evaluation run to W&B. Returns the W&B run ID, or None if
     logging was skipped/failed. Scoring work is never lost to a W&B outage —
     failures here are caught and surfaced, not propagated."""
-    metrics = compute_metrics(ragas, traj_scores, judge_results)
+    metrics = compute_metrics(ragas, traj_scores, judge_results, ops_records)
 
     if not _wandb_available():
         print(

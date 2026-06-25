@@ -18,8 +18,13 @@ from config import (
 # LangchainEmbeddingsWrapper exposes embed_query, which RAGAS metrics call;
 # the ragas-native HuggingFaceEmbeddings does not (new async-only interface).
 if SCORING_PROVIDER == "gemini":
+    import os
     from langchain_google_genai import ChatGoogleGenerativeAI
-    _ragas_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
+    _ragas_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
+        model=RAGAS_LLM_MODEL,
+        temperature=RAGAS_TEMPERATURE,
+        google_api_key=os.environ["GEMINI_API_KEY"],
+    ))
 else:
     from langchain_groq import ChatGroq
     _ragas_llm = LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))

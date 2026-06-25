@@ -8,7 +8,7 @@ from config import SCORING_PROVIDER, JUDGE_MODEL, JUDGE_TEMPERATURE, JUDGE_N_SAM
 if SCORING_PROVIDER == "gemini":
     from google import genai
     from google.genai import types as _genai_types
-    _gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    _gemini_client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 else:
     from groq import Groq
     _groq_client = Groq()

@@ -50,6 +50,17 @@ class RagasResult:
 
 
 @dataclass
+class OperationalRecord:
+    """Per-question operational metrics tracked during agent invocation."""
+    question: str
+    latency_ms: float
+    steps_taken: int
+    contexts_retrieved: int
+    total_context_chars: int
+    answer_length_chars: int
+
+
+@dataclass
 class TrajectoryScore:
     planning_quality: Optional[float]       # None = judge-scored (no golden trajectory)
     tool_selection_correctness: Optional[float]
