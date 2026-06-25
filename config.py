@@ -18,14 +18,14 @@ JUDGE_GC_MAX_TOKENS = 256    # goal-completion call is shorter
 
 JUDGE_MODEL = {
     "groq": "llama-3.3-70b-versatile",
-    "gemini": "gemini-2.0-flash",
+    "gemini": "gemini-2.5-flash",
 }[SCORING_PROVIDER]
 
 # --- RAGAS (Track A) ---
 RAGAS_TEMPERATURE = 0
 RAGAS_LLM_MODEL = {
     "groq": "llama-3.3-70b-versatile",
-    "gemini": "gemini-2.0-flash",
+    "gemini": "gemini-2.5-flash",
 }[SCORING_PROVIDER]
 RAGAS_ANSWER_RELEVANCY_STRICTNESS = 1   # Groq only allows n=1; default 3 errors
 RAGAS_TIMEOUT = 600
