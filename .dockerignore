@@ -1,0 +1,17 @@
+# Build the env inside the image via `uv sync`; never copy the host venv.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.coverage
+htmlcov/
+dist/
+*.egg-info/
+
+# Runtime artifacts — mounted as a volume in docker-compose, not baked in.
+data/
+wandb/
+
+# Secrets — provided via env_file at runtime.
+.env

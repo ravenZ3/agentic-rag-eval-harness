@@ -10,25 +10,11 @@ answer-level RAGAS metrics miss, without spending a cent.
 """
 import sys
 import os
-import json
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from dataset.schema import load_golden_set
-from eval.contracts import TrajectoryRecord, TrajectoryStep as EvalStep
+from eval.checkpoint_io import load_trajectory_records
 from eval.trajectory import score_trajectory
-
-
-def load_trajectories(path):
-    with open(path) as f:
-        data = json.load(f)
-    return [
-        TrajectoryRecord(
-            question=r["question"],
-            final_answer=r["final_answer"],
-            steps=[EvalStep(**s) for s in r["steps"]],
-        )
-        for r in data["trajectory_records"]
-    ]
 
 
 def mean(vals):
@@ -37,7 +23,7 @@ def mean(vals):
 
 
 def score_set(path, golden_by_q):
-    records = load_trajectories(path)
+    records = load_trajectory_records(path)
     # goal_completion is judge-injected; pass neutral 0.5 since we only care
     # about the structural metrics here.
     scores = [score_trajectory(r, golden_by_q[r.question], 2.5) for r in records]

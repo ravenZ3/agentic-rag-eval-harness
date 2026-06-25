@@ -3,7 +3,6 @@ import sys
 import os
 import time
 import json
-import dataclasses
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import eval.patches  # noqa: F401 — must be first; applies import-time patches
@@ -16,6 +15,7 @@ from dataset.schema import load_golden_set
 from agent.graph import agent
 from agent.state import initial_state
 from eval.contracts import AnswerRecord, TrajectoryRecord, TrajectoryStep as EvalStep, OperationalRecord
+from eval.checkpoint_io import serialize_checkpoint, load_checkpoint as _load_checkpoint
 from eval.ragas_track import run_ragas
 from eval.trajectory import score_trajectory
 from eval.judge import judge_trajectory
@@ -39,21 +39,7 @@ CHECKPOINT_PATH = f"{CHECKPOINT_DIR}/checkpoint_{args.run_name}.json"
 
 
 def save_checkpoint(answer_records, trajectory_records, ops_records, ragas_result=None):
-    os.makedirs("data", exist_ok=True)
-    data = {
-        "answer_records": [dataclasses.asdict(r) for r in answer_records],
-        "trajectory_records": [
-            {
-                "question": r.question,
-                "final_answer": r.final_answer,
-                "steps": [dataclasses.asdict(s) for s in r.steps],
-            }
-            for r in trajectory_records
-        ],
-        "ops_records": [dataclasses.asdict(r) for r in ops_records],
-    }
-    if ragas_result is not None:
-        data["ragas_result"] = dataclasses.asdict(ragas_result)
+    data = serialize_checkpoint(answer_records, trajectory_records, ops_records, ragas_result)
     with open(CHECKPOINT_PATH, "w") as f:
         json.dump(data, f)
 
@@ -61,23 +47,7 @@ def save_checkpoint(answer_records, trajectory_records, ops_records, ragas_resul
 def load_checkpoint():
     if not os.path.exists(CHECKPOINT_PATH):
         return [], [], [], None
-    with open(CHECKPOINT_PATH) as f:
-        data = json.load(f)
-    answer_records = [AnswerRecord(**r) for r in data["answer_records"]]
-    trajectory_records = [
-        TrajectoryRecord(
-            question=r["question"],
-            final_answer=r["final_answer"],
-            steps=[EvalStep(**s) for s in r["steps"]],
-        )
-        for r in data["trajectory_records"]
-    ]
-    ops_records = [OperationalRecord(**r) for r in data.get("ops_records", [])]
-    ragas_result = None
-    if "ragas_result" in data:
-        from eval.contracts import RagasResult
-        ragas_result = RagasResult(**data["ragas_result"])
-    return answer_records, trajectory_records, ops_records, ragas_result
+    return _load_checkpoint(CHECKPOINT_PATH)
 
 
 golden_items = load_golden_set(args.golden)

@@ -18,7 +18,7 @@ import eval.patches  # noqa: F401
 from dotenv import load_dotenv
 load_dotenv()
 
-from eval.contracts import AnswerRecord
+from eval.checkpoint_io import load_answer_records
 from eval.ragas_track import run_ragas
 from config import SCORING_PROVIDER, RAGAS_LLM_MODEL
 
@@ -28,10 +28,7 @@ def main():
         print("usage: score_ragas_offline.py <checkpoint.json>")
         sys.exit(1)
     path = sys.argv[1]
-    with open(path) as f:
-        data = json.load(f)
-
-    answers = [AnswerRecord(**r) for r in data["answer_records"]]
+    answers = load_answer_records(path)
     print(f"Scoring {len(answers)} answers from {path}")
     print(f"Provider: {SCORING_PROVIDER}  model: {RAGAS_LLM_MODEL}")
 
