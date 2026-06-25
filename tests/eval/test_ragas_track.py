@@ -25,9 +25,10 @@ def test_run_ragas_returns_result_shape():
     mock_df.to_dict.return_value = [{"question": "What is attention?", "faithfulness": 0.9}]
     mock_result.to_pandas.return_value = mock_df
 
-    with patch("eval.ragas_track.evaluate", return_value=mock_result):
-        with patch("eval.ragas_track.Dataset"):
-            result = run_ragas(records)
+    with patch("eval.ragas_track._make_ragas_llm", return_value=MagicMock()):
+        with patch("eval.ragas_track.evaluate", return_value=mock_result):
+            with patch("eval.ragas_track.Dataset"):
+                result = run_ragas(records)
 
     assert result.faithfulness == 0.9
     assert result.answer_relevancy == 0.85
