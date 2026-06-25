@@ -28,3 +28,7 @@ EMBED_MODEL = "all-MiniLM-L6-v2"
 CHROMA_PERSIST_DIR = "data/chroma"
 CHROMA_COLLECTION = "arxiv_ml"
 INGEST_BATCH_SIZE = 100
+
+# --- PDF chunking ---
+CHUNK_SIZE = 500        # words per chunk
+CHUNK_OVERLAP = 50      # word overlap between consecutive chunks
