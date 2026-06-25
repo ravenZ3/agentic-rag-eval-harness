@@ -31,6 +31,13 @@ def _download_pdf(url: str) -> bytes | None:
     return None
 
 
+def _sanitize(text: str) -> str:
+    """Remove null bytes and non-UTF-8 sequences that break the tokenizer."""
+    if not isinstance(text, str):
+        return ""
+    return text.replace("\x00", "").encode("utf-8", errors="replace").decode("utf-8")
+
+
 def _extract_text(pdf_bytes: bytes) -> str:
     try:
         reader = PdfReader(io.BytesIO(pdf_bytes))
@@ -38,7 +45,9 @@ def _extract_text(pdf_bytes: bytes) -> str:
         for page in reader.pages:
             text = page.extract_text()
             if text:
-                pages.append(text.strip())
+                clean = _sanitize(text).strip()
+                if clean:
+                    pages.append(clean)
         return "\n\n".join(pages)
     except Exception as e:
         logger.warning("PDF text extraction failed: %s", e)

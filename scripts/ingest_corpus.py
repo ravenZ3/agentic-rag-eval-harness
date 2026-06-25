@@ -40,7 +40,10 @@ for paper in fetch_arxiv_papers(max_results=args.max_results, full_text=not args
         total_papers += 1
 
     text = paper.get("text", "")
-    if not isinstance(text, str) or not text.strip():
+    if not isinstance(text, str):
+        continue
+    text = text.replace("\x00", "").encode("utf-8", errors="replace").decode("utf-8").strip()
+    if not text:
         continue
     doc = Document(
         page_content=text,
