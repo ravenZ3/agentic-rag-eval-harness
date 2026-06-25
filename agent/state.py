@@ -20,3 +20,16 @@ class AgentState(TypedDict):
     final_answer: str
     step_count: int
     max_steps: int
+
+
+def initial_state(question: str, max_steps: int = 6) -> AgentState:
+    return AgentState(
+        question=question,
+        sub_goals=[],
+        current_goal_idx=0,
+        contexts=[],
+        trajectory=[],
+        final_answer="",
+        step_count=0,
+        max_steps=max_steps,
+    )

@@ -11,7 +11,7 @@ load_dotenv()
 import argparse
 from dataset.schema import load_golden_set
 from agent.graph import agent
-from agent.state import AgentState
+from agent.state import initial_state
 from eval.contracts import AnswerRecord, TrajectoryRecord, TrajectoryStep as EvalStep
 from eval.ragas_track import run_ragas
 from eval.trajectory import score_trajectory
@@ -34,17 +34,7 @@ answer_records, trajectory_records = [], []
 
 for i, item in enumerate(golden_items):
     print(f"  [{i+1}/{len(golden_items)}] {item.question[:60]}...")
-    initial: AgentState = {
-        "question": item.question,
-        "sub_goals": [],
-        "current_goal_idx": 0,
-        "contexts": [],
-        "trajectory": [],
-        "final_answer": "",
-        "step_count": 0,
-        "max_steps": 6,
-    }
-    result = agent.invoke(initial)
+    result = agent.invoke(initial_state(item.question))
     answer_records.append(AnswerRecord(
         question=item.question,
         answer=result["final_answer"],

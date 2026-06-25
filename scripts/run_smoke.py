@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from agent.graph import agent
-from agent.state import AgentState
+from agent.state import initial_state
 
 QUESTIONS = [
     # single-hop
@@ -30,17 +30,7 @@ QUESTIONS = [
 ]
 
 def run_question(q: str) -> None:
-    initial: AgentState = {
-        "question": q,
-        "sub_goals": [],
-        "current_goal_idx": 0,
-        "contexts": [],
-        "trajectory": [],
-        "final_answer": "",
-        "step_count": 0,
-        "max_steps": 6,
-    }
-    result = agent.invoke(initial)
+    result = agent.invoke(initial_state(q))
     print(f"\n{'='*70}")
     print(f"Q: {q}")
     print(f"Sub-goals: {result['sub_goals']}")
