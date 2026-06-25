@@ -7,7 +7,7 @@ from agent.state import AgentState, TrajectoryStep
 
 # Agent uses Qwen (Alibaba family). Judge uses Llama (Meta family via Groq).
 # Different model families → avoids self-preference bias in evaluation.
-_llm = ChatGroq(model="qwen/qwen3-32b", temperature=0)
+_llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
 
 _PLANNER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (
