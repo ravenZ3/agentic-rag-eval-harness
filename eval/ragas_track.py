@@ -17,17 +17,17 @@ from config import (
 
 # LangchainEmbeddingsWrapper exposes embed_query, which RAGAS metrics call;
 # the ragas-native HuggingFaceEmbeddings does not (new async-only interface).
-if SCORING_PROVIDER == "gemini":
-    import os
-    from langchain_google_genai import ChatGoogleGenerativeAI
-    _ragas_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(
-        model=RAGAS_LLM_MODEL,
-        temperature=RAGAS_TEMPERATURE,
-        google_api_key=os.environ["GEMINI_API_KEY"],
-    ))
-else:
+def _make_ragas_llm():
+    if SCORING_PROVIDER == "gemini":
+        import os
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        return LangchainLLMWrapper(ChatGoogleGenerativeAI(
+            model=RAGAS_LLM_MODEL,
+            temperature=RAGAS_TEMPERATURE,
+            google_api_key=os.environ["GEMINI_API_KEY"],
+        ))
     from langchain_groq import ChatGroq
-    _ragas_llm = LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
+    return LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
 _ragas_embeddings = LangchainEmbeddingsWrapper(
     HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 )
@@ -44,6 +44,7 @@ _RUN_CONFIG = RunConfig(timeout=RAGAS_TIMEOUT, max_workers=RAGAS_MAX_WORKERS, ma
 
 def run_ragas(records: list[AnswerRecord]) -> RagasResult:
     """Track A: answer-level evaluation via RAGAS."""
+    _ragas_llm = _make_ragas_llm()
     data = {
         "question": [r.question for r in records],
         "answer": [r.answer for r in records],

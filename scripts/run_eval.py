@@ -26,12 +26,17 @@ parser.add_argument("--run-name", default="baseline")
 parser.add_argument("--golden", default="dataset/golden_v1.yaml")
 parser.add_argument("--limit", type=int, default=None, help="Only run N questions (faster for testing)")
 parser.add_argument("--resume", action="store_true", help="Resume from checkpoint if one exists")
+parser.add_argument("--skip-ragas", action="store_true",
+                    help="Skip the (slow/expensive) RAGAS scoring. Trajectory + judge still run. "
+                         "RAGAS metrics are left empty; use this when you already have them.")
 args = parser.parse_args()
 
-CHECKPOINT_PATH = f"data/checkpoint_{args.run_name}.json"
+CHECKPOINT_DIR = "data/chkpts"
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+CHECKPOINT_PATH = f"{CHECKPOINT_DIR}/checkpoint_{args.run_name}.json"
 
 
-def save_checkpoint(answer_records, trajectory_records, ops_records):
+def save_checkpoint(answer_records, trajectory_records, ops_records, ragas_result=None):
     os.makedirs("data", exist_ok=True)
     data = {
         "answer_records": [dataclasses.asdict(r) for r in answer_records],
@@ -45,13 +50,15 @@ def save_checkpoint(answer_records, trajectory_records, ops_records):
         ],
         "ops_records": [dataclasses.asdict(r) for r in ops_records],
     }
+    if ragas_result is not None:
+        data["ragas_result"] = dataclasses.asdict(ragas_result)
     with open(CHECKPOINT_PATH, "w") as f:
         json.dump(data, f)
 
 
 def load_checkpoint():
     if not os.path.exists(CHECKPOINT_PATH):
-        return [], [], []
+        return [], [], [], None
     with open(CHECKPOINT_PATH) as f:
         data = json.load(f)
     answer_records = [AnswerRecord(**r) for r in data["answer_records"]]
@@ -64,28 +71,39 @@ def load_checkpoint():
         for r in data["trajectory_records"]
     ]
     ops_records = [OperationalRecord(**r) for r in data.get("ops_records", [])]
-    return answer_records, trajectory_records, ops_records
+    ragas_result = None
+    if "ragas_result" in data:
+        from eval.contracts import RagasResult
+        ragas_result = RagasResult(**data["ragas_result"])
+    return answer_records, trajectory_records, ops_records, ragas_result
 
 
 golden_items = load_golden_set(args.golden)
 if args.limit:
     golden_items = golden_items[:args.limit]
 
+# Full golden set, kept intact for scoring. `pending_items` is the subset
+# still needing an agent run; on full resume this is empty but golden_items
+# stays complete so trajectory scoring still has its golden references.
+pending_items = golden_items
+
 # Resume from checkpoint if requested and available
 if args.resume:
-    answer_records, trajectory_records, ops_records = load_checkpoint()
+    answer_records, trajectory_records, ops_records, ragas_result = load_checkpoint()
     completed = {r.question for r in answer_records}
-    golden_items = [g for g in golden_items if g.question not in completed]
-    print(f"Resuming: {len(completed)} already done, {len(golden_items)} remaining")
+    pending_items = [g for g in golden_items if g.question not in completed]
+    print(f"Resuming: {len(completed)} already done, {len(pending_items)} remaining")
+    if ragas_result is not None:
+        print("RAGAS results loaded from checkpoint — skipping RAGAS scoring")
 else:
-    answer_records, trajectory_records, ops_records = [], [], []
+    answer_records, trajectory_records, ops_records, ragas_result = [], [], [], None
 
-print(f"Running eval on {len(golden_items)} golden items (run: {args.run_name})")
+print(f"Running eval on {len(pending_items)} golden items (run: {args.run_name})")
 
-for i, item in enumerate(golden_items):
+for i, item in enumerate(pending_items):
     print(f"  [{i+1}/{len(golden_items)}] {item.question[:60]}...")
     if i > 0:
-        time.sleep(10)  # pace Groq TPM — 6k tokens/min shared across all calls
+        time.sleep(20)  # pace Groq TPM — 6k tokens/min; synthesizer bursts ~3500 tokens
     t0 = time.time()
     result = agent.invoke(initial_state(item.question))
     latency_ms = (time.time() - t0) * 1000
@@ -115,15 +133,25 @@ for i, item in enumerate(golden_items):
     ))
     save_checkpoint(answer_records, trajectory_records, ops_records)
 
-print("Scoring with RAGAS...")
-ragas_result = run_ragas(answer_records)
+if ragas_result is not None:
+    print("Skipping RAGAS (loaded from checkpoint)")
+elif args.skip_ragas:
+    from eval.contracts import RagasResult
+    nan = float("nan")
+    ragas_result = RagasResult(nan, nan, nan, nan, per_item=[])
+    print("Skipping RAGAS (--skip-ragas); RAGAS metrics will be empty")
+else:
+    print("Scoring with RAGAS...")
+    ragas_result = run_ragas(answer_records)
+    save_checkpoint(answer_records, trajectory_records, ops_records, ragas_result)
 
 print("Running LLM judge on trajectories...")
 judge_results = [judge_trajectory(r, n_samples=3) for r in trajectory_records]
 
+golden_by_question = {g.question: g for g in golden_items}
 traj_scores = [
-    score_trajectory(r, g, float(j.goal_completion))
-    for r, g, j in zip(trajectory_records, golden_items, judge_results)
+    score_trajectory(r, golden_by_question[r.question], float(j.goal_completion))
+    for r, j in zip(trajectory_records, judge_results)
 ]
 
 print("Logging to W&B...")
@@ -147,7 +175,10 @@ metrics = compute_metrics(ragas_result, traj_scores, judge_results, ops_records)
 for key in sorted(metrics):
     print(f"  {key:<42} {metrics[key]:.3f}")
 
-# Clean up checkpoint on successful completion
+# Preserve checkpoint on success (renamed) so trajectories/answers can be
+# re-scored offline without re-running the agent. A fresh (non-resume) run
+# overwrites CHECKPOINT_PATH anyway, so this never blocks a clean re-run.
 if os.path.exists(CHECKPOINT_PATH):
-    os.remove(CHECKPOINT_PATH)
-    print(f"Checkpoint removed: {CHECKPOINT_PATH}")
+    done_path = CHECKPOINT_PATH.replace(".json", ".done.json")
+    os.replace(CHECKPOINT_PATH, done_path)
+    print(f"Checkpoint preserved: {done_path}")

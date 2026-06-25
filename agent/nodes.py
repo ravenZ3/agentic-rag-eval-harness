@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import time
+from groq import RateLimitError
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from agent.state import AgentState, TrajectoryStep
@@ -31,9 +33,12 @@ _DEGRADED_PLANNER_PROMPT = ChatPromptTemplate.from_messages([
 
 _SYNTHESIZER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (
-        "You are a research assistant. Answer the question using ONLY the provided contexts. "
-        "If the answer cannot be determined from the contexts, respond exactly: "
-        "'I cannot determine this from the available information.'"
+        "You are a research assistant. Answer the question using the provided contexts. "
+        "The contexts may each cover different parts of the answer — synthesize across "
+        "them to form one coherent answer. Partial or distributed evidence is acceptable; "
+        "combine what is present. "
+        "Refuse ONLY if the contexts contain no relevant information at all. "
+        "If you refuse, reply exactly: 'I cannot determine this from the available information.'"
     )),
     ("human", "Question: {question}\n\nContexts:\n{contexts}"),
 ])
@@ -100,9 +105,20 @@ def should_continue(state: AgentState) -> str:
     return "retrieve"
 
 
+def _invoke_with_retry(prompt, max_retries: int = 5, base_wait: float = 2.0):
+    for attempt in range(max_retries):
+        try:
+            return _llm.invoke(prompt)
+        except RateLimitError:
+            if attempt == max_retries - 1:
+                raise
+            wait = base_wait * (2 ** attempt)
+            time.sleep(wait)
+
+
 def synthesizer_node(state: AgentState) -> dict:
     contexts_text = "\n\n---\n\n".join(state["contexts"])
-    response = _llm.invoke(_SYNTHESIZER_PROMPT.format_messages(
+    response = _invoke_with_retry(_SYNTHESIZER_PROMPT.format_messages(
         question=state["question"],
         contexts=contexts_text,
     ))

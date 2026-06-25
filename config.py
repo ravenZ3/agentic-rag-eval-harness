@@ -13,8 +13,8 @@ SCORING_PROVIDER = "gemini"
 # --- Judge (Track C) ---
 JUDGE_TEMPERATURE = 0
 JUDGE_N_SAMPLES = 3          # self-consistency runs; median is taken
-JUDGE_MAX_TOKENS = 512
-JUDGE_GC_MAX_TOKENS = 256    # goal-completion call is shorter
+JUDGE_MAX_TOKENS = 1024
+JUDGE_GC_MAX_TOKENS = 512
 
 JUDGE_MODEL = {
     "groq": "llama-3.3-70b-versatile",
