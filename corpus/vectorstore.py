@@ -18,12 +18,20 @@ def get_vectorstore() -> Chroma:
     )
 
 
+def _scalarize(value):
+    # Chroma metadata accepts only str/int/float/bool; flatten lists/tuples
+    # (e.g. authors) into a comma-joined string so the data is preserved.
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(v) for v in value)
+    return value
+
+
 def ingest_papers(papers: list[dict]) -> None:
     vs = get_vectorstore()
     docs = [
         Document(
             page_content=p["text"],
-            metadata={k: v for k, v in p.items() if k != "text"},
+            metadata={k: _scalarize(v) for k, v in p.items() if k != "text"},
         )
         for p in papers
     ]
