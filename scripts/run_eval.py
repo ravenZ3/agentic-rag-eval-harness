@@ -25,6 +25,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--run-name", default="baseline")
 parser.add_argument("--golden", default="dataset/golden_v1.yaml")
 parser.add_argument("--limit", type=int, default=None, help="Only run N questions (faster for testing)")
+parser.add_argument("--category", default=None,
+                    help="Only run questions of this category (e.g. multi_hop). Applied before --limit.")
 parser.add_argument("--resume", action="store_true", help="Resume from checkpoint if one exists")
 parser.add_argument("--skip-ragas", action="store_true",
                     help="Skip the (slow/expensive) RAGAS scoring. Trajectory + judge still run. "
@@ -79,6 +81,8 @@ def load_checkpoint():
 
 
 golden_items = load_golden_set(args.golden)
+if args.category:
+    golden_items = [g for g in golden_items if g.category.value == args.category]
 if args.limit:
     golden_items = golden_items[:args.limit]
 
