@@ -1,10 +1,9 @@
-import sys
-from unittest.mock import MagicMock
-sys.modules["langchain_community.chat_models.vertexai"] = MagicMock()
+import eval.patches  # noqa: F401 — must be first; applies import-time patches
 
 from ragas import evaluate
 from ragas.run_config import RunConfig
 from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+from ragas.metrics import AnswerRelevancy
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_groq import ChatGroq
@@ -19,6 +18,10 @@ _ragas_llm = LangchainLLMWrapper(ChatGroq(model="llama-3.3-70b-versatile", tempe
 _ragas_embeddings = LangchainEmbeddingsWrapper(
     HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 )
+
+# Groq only allows n=1; answer_relevancy defaults to strictness=3 which sends
+# n=3 and gets a 400. Force strictness=1 so it stays within Groq's limits.
+_answer_relevancy = AnswerRelevancy(strictness=1)
 
 # faithfulness/context_precision fan out into many sequential 70B calls.
 # Groq rate-limits + default 180s timeout = TimeoutError. Raise the timeout
@@ -37,7 +40,7 @@ def run_ragas(records: list[AnswerRecord]) -> RagasResult:
     ds = Dataset.from_dict(data)
     result = evaluate(
         ds,
-        metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
+        metrics=[faithfulness, _answer_relevancy, context_precision, context_recall],
         llm=_ragas_llm,
         embeddings=_ragas_embeddings,
         run_config=_RUN_CONFIG,

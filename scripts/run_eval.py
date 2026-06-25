@@ -3,6 +3,8 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import eval.patches  # noqa: F401 — must be first; applies import-time patches
+
 from dotenv import load_dotenv
 load_dotenv()
 
