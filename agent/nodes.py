@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from agent.state import AgentState, TrajectoryStep
@@ -41,7 +42,6 @@ _SYNTHESIZER_PROMPT = ChatPromptTemplate.from_messages([
 
 def _strip_thinking(text: str) -> str:
     """Qwen3 prepends <think>...</think> blocks before actual output."""
-    import re
     return re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL).strip()
 
 
