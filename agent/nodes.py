@@ -4,7 +4,7 @@ import re
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from agent.state import AgentState, TrajectoryStep
-from config import AGENT_MODEL, AGENT_TEMPERATURE
+from config import AGENT_MODEL, AGENT_TEMPERATURE, RETRIEVAL_K
 
 _llm = ChatGroq(model=AGENT_MODEL, temperature=AGENT_TEMPERATURE)
 
@@ -79,7 +79,7 @@ def retriever_node(state: AgentState) -> dict:
     step = TrajectoryStep(
         thought=f"Retrieving for sub-goal: {goal}",
         tool_called="vector_search",
-        tool_args={"query": goal, "k": 4},
+        tool_args={"query": goal, "k": RETRIEVAL_K},
         tool_result=str(results[:2]),  # truncate for trace readability
         observation=f"Retrieved {len(results)} passages",
     )

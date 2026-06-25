@@ -4,6 +4,7 @@
 AGENT_MODEL = "llama-3.1-8b-instant"
 AGENT_TEMPERATURE = 0
 AGENT_MAX_STEPS = 6
+RETRIEVAL_K = 2          # chunks per sub-goal; keep low to stay within Groq TPM
 
 # --- Judge (Track C) ---
 JUDGE_MODEL = "llama-3.3-70b-versatile"
