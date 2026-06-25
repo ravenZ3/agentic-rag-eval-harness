@@ -2,13 +2,13 @@ from pathlib import Path
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
+from config import CHROMA_PERSIST_DIR, CHROMA_COLLECTION, INGEST_BATCH_SIZE, EMBED_MODEL
 
-PERSIST_DIR = Path("data/chroma")
-COLLECTION_NAME = "arxiv_ml"
-INGEST_BATCH_SIZE = 100
+PERSIST_DIR = Path(CHROMA_PERSIST_DIR)
+COLLECTION_NAME = CHROMA_COLLECTION
 
-# all-MiniLM-L6-v2 already cached at ~/.cache/huggingface/hub/ — no download.
-_EMBEDDINGS = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Model already cached at ~/.cache/huggingface/hub/ — no download on repeat runs.
+_EMBEDDINGS = HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 
 
 def get_vectorstore() -> Chroma:

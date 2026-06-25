@@ -10,23 +10,27 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from datasets import Dataset
 from eval.contracts import AnswerRecord, RagasResult
+from config import (
+    RAGAS_LLM_MODEL, RAGAS_TEMPERATURE, EMBED_MODEL,
+    RAGAS_ANSWER_RELEVANCY_STRICTNESS,
+    RAGAS_TIMEOUT, RAGAS_MAX_WORKERS, RAGAS_MAX_RETRIES, RAGAS_MAX_WAIT,
+)
 
-# Use Groq Llama for RAGAS LLM scoring — no OpenAI key required.
 # LangchainEmbeddingsWrapper exposes embed_query, which RAGAS metrics call;
 # the ragas-native HuggingFaceEmbeddings does not (new async-only interface).
-_ragas_llm = LangchainLLMWrapper(ChatGroq(model="llama-3.3-70b-versatile", temperature=0))
+_ragas_llm = LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
 _ragas_embeddings = LangchainEmbeddingsWrapper(
-    HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 )
 
 # Groq only allows n=1; answer_relevancy defaults to strictness=3 which sends
 # n=3 and gets a 400. Force strictness=1 so it stays within Groq's limits.
-_answer_relevancy = AnswerRelevancy(strictness=1)
+_answer_relevancy = AnswerRelevancy(strictness=RAGAS_ANSWER_RELEVANCY_STRICTNESS)
 
 # faithfulness/context_precision fan out into many sequential 70B calls.
 # Groq rate-limits + default 180s timeout = TimeoutError. Raise the timeout
 # and cap concurrency so we stay under Groq's per-minute token ceiling.
-_RUN_CONFIG = RunConfig(timeout=600, max_workers=2, max_retries=5, max_wait=60)
+_RUN_CONFIG = RunConfig(timeout=RAGAS_TIMEOUT, max_workers=RAGAS_MAX_WORKERS, max_retries=RAGAS_MAX_RETRIES, max_wait=RAGAS_MAX_WAIT)
 
 
 def run_ragas(records: list[AnswerRecord]) -> RagasResult:

@@ -4,10 +4,9 @@ import re
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from agent.state import AgentState, TrajectoryStep
+from config import AGENT_MODEL, AGENT_TEMPERATURE
 
-# Agent uses Qwen (Alibaba family). Judge uses Llama (Meta family via Groq).
-# Different model families → avoids self-preference bias in evaluation.
-_llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0)
+_llm = ChatGroq(model=AGENT_MODEL, temperature=AGENT_TEMPERATURE)
 
 _PLANNER_PROMPT = ChatPromptTemplate.from_messages([
     ("system", (

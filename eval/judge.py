@@ -3,10 +3,7 @@ import numpy as np
 from groq import Groq
 from sklearn.metrics import cohen_kappa_score
 from eval.contracts import TrajectoryRecord, JudgeResult
-
-# Agent runs on Groq/Qwen (Alibaba). Judge runs on Groq/Llama (Meta) — different model family,
-# avoiding self-preference bias when a model grades its own outputs.
-JUDGE_MODEL = "llama-3.3-70b-versatile"
+from config import JUDGE_MODEL, JUDGE_TEMPERATURE, JUDGE_N_SAMPLES, JUDGE_MAX_TOKENS, JUDGE_GC_MAX_TOKENS
 
 _client = Groq()
 
@@ -38,7 +35,7 @@ Return ONLY valid JSON: {"goal_completion": <int 1-5>, "reasoning": "<one senten
 """
 
 
-def judge_trajectory(record: TrajectoryRecord, n_samples: int = 3) -> JudgeResult:
+def judge_trajectory(record: TrajectoryRecord, n_samples: int = JUDGE_N_SAMPLES) -> JudgeResult:
     """
     Track C: cross-family Groq/Llama judge. n_samples for self-consistency (median).
     Raises ValueError on unparseable JSON — hard failure by design.
@@ -50,8 +47,8 @@ def judge_trajectory(record: TrajectoryRecord, n_samples: int = 3) -> JudgeResul
     for _ in range(n_samples):
         response = _client.chat.completions.create(
             model=JUDGE_MODEL,
-            temperature=0,
-            max_tokens=512,
+            temperature=JUDGE_TEMPERATURE,
+            max_tokens=JUDGE_MAX_TOKENS,
             messages=[
                 {"role": "system", "content": _JUDGE_SYSTEM},
                 {
@@ -87,8 +84,8 @@ def judge_trajectory(record: TrajectoryRecord, n_samples: int = 3) -> JudgeResul
     # Goal completion: single call (stable enough without self-consistency)
     gc_response = _client.chat.completions.create(
         model=JUDGE_MODEL,
-        temperature=0,
-        max_tokens=256,
+        temperature=JUDGE_TEMPERATURE,
+        max_tokens=JUDGE_GC_MAX_TOKENS,
         messages=[
             {"role": "system", "content": _GOAL_COMPLETION_SYSTEM},
             {
