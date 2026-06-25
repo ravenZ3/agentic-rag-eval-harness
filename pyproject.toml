@@ -33,6 +33,7 @@ dependencies = [
     "torch>=2.0",
     "pypdf>=4.0",
     "requests>=2.31",
+    "langchain-google-genai>=2.1.12",
 ]
 
 [dependency-groups]

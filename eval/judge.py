@@ -1,11 +1,17 @@
 import json
+import os
 import numpy as np
-from groq import Groq
 from sklearn.metrics import cohen_kappa_score
 from eval.contracts import TrajectoryRecord, JudgeResult
-from config import JUDGE_MODEL, JUDGE_TEMPERATURE, JUDGE_N_SAMPLES, JUDGE_MAX_TOKENS, JUDGE_GC_MAX_TOKENS
+from config import SCORING_PROVIDER, JUDGE_MODEL, JUDGE_TEMPERATURE, JUDGE_N_SAMPLES, JUDGE_MAX_TOKENS, JUDGE_GC_MAX_TOKENS
 
-_client = Groq()
+if SCORING_PROVIDER == "gemini":
+    from google import genai
+    from google.genai import types as _genai_types
+    _gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+else:
+    from groq import Groq
+    _groq_client = Groq()
 
 _JUDGE_SYSTEM = """\
 You are an expert evaluator for AI research assistants. \
@@ -44,27 +50,42 @@ def judge_trajectory(record: TrajectoryRecord, n_samples: int = JUDGE_N_SAMPLES)
     reasonings: list[str] = []
     failing_claims_all: list[str] = []
 
-    for _ in range(n_samples):
-        response = _client.chat.completions.create(
-            model=JUDGE_MODEL,
-            temperature=JUDGE_TEMPERATURE,
-            max_tokens=JUDGE_MAX_TOKENS,
-            messages=[
-                {"role": "system", "content": _JUDGE_SYSTEM},
-                {
-                    "role": "user",
-                    "content": f"Question: {record.question}\n\nAnswer: {record.final_answer}",
-                },
-            ],
-        )
-        text = response.choices[0].message.content.strip()
-        # Strip markdown code fences if model wraps output despite instructions
+    def _call(system: str, user: str, max_tokens: int) -> str:
+        if SCORING_PROVIDER == "gemini":
+            resp = _gemini_client.models.generate_content(
+                model=JUDGE_MODEL,
+                contents=user,
+                config=_genai_types.GenerateContentConfig(
+                    system_instruction=system,
+                    temperature=JUDGE_TEMPERATURE,
+                    max_output_tokens=max_tokens,
+                ),
+            )
+            text = resp.text.strip()
+        else:
+            resp = _groq_client.chat.completions.create(
+                model=JUDGE_MODEL,
+                temperature=JUDGE_TEMPERATURE,
+                max_tokens=max_tokens,
+                messages=[
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+            )
+            text = resp.choices[0].message.content.strip()
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
                 text = text[4:]
             text = text.strip()
+        return text
 
+    for _ in range(n_samples):
+        text = _call(
+            _JUDGE_SYSTEM,
+            f"Question: {record.question}\n\nAnswer: {record.final_answer}",
+            JUDGE_MAX_TOKENS,
+        )
         try:
             data = json.loads(text)
         except json.JSONDecodeError as e:
@@ -82,25 +103,11 @@ def judge_trajectory(record: TrajectoryRecord, n_samples: int = JUDGE_N_SAMPLES)
         failing_claims_all.extend(data["failing_claims"])
 
     # Goal completion: single call (stable enough without self-consistency)
-    gc_response = _client.chat.completions.create(
-        model=JUDGE_MODEL,
-        temperature=JUDGE_TEMPERATURE,
-        max_tokens=JUDGE_GC_MAX_TOKENS,
-        messages=[
-            {"role": "system", "content": _GOAL_COMPLETION_SYSTEM},
-            {
-                "role": "user",
-                "content": f"Question: {record.question}\n\nAnswer: {record.final_answer}",
-            },
-        ],
+    gc_text = _call(
+        _GOAL_COMPLETION_SYSTEM,
+        f"Question: {record.question}\n\nAnswer: {record.final_answer}",
+        JUDGE_GC_MAX_TOKENS,
     )
-    gc_text = gc_response.choices[0].message.content.strip()
-    if gc_text.startswith("```"):
-        gc_text = gc_text.split("```")[1]
-        if gc_text.startswith("json"):
-            gc_text = gc_text[4:]
-        gc_text = gc_text.strip()
-
     try:
         gc_data = json.loads(gc_text)
     except json.JSONDecodeError as e:

@@ -6,19 +6,23 @@ from ragas.metrics import faithfulness, answer_relevancy, context_precision, con
 from ragas.metrics import AnswerRelevancy
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
-from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from datasets import Dataset
 from eval.contracts import AnswerRecord, RagasResult
 from config import (
-    RAGAS_LLM_MODEL, RAGAS_TEMPERATURE, EMBED_MODEL,
+    SCORING_PROVIDER, RAGAS_LLM_MODEL, RAGAS_TEMPERATURE, EMBED_MODEL,
     RAGAS_ANSWER_RELEVANCY_STRICTNESS,
     RAGAS_TIMEOUT, RAGAS_MAX_WORKERS, RAGAS_MAX_RETRIES, RAGAS_MAX_WAIT,
 )
 
 # LangchainEmbeddingsWrapper exposes embed_query, which RAGAS metrics call;
 # the ragas-native HuggingFaceEmbeddings does not (new async-only interface).
-_ragas_llm = LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
+if SCORING_PROVIDER == "gemini":
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    _ragas_llm = LangchainLLMWrapper(ChatGoogleGenerativeAI(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
+else:
+    from langchain_groq import ChatGroq
+    _ragas_llm = LangchainLLMWrapper(ChatGroq(model=RAGAS_LLM_MODEL, temperature=RAGAS_TEMPERATURE))
 _ragas_embeddings = LangchainEmbeddingsWrapper(
     HuggingFaceEmbeddings(model_name=EMBED_MODEL)
 )
