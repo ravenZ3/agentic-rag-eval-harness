@@ -46,6 +46,8 @@ def _extract_text(pdf_bytes: bytes) -> str:
 
 
 def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
+    if not isinstance(text, str):
+        return []
     words = text.split()
     if not words:
         return []
@@ -53,7 +55,9 @@ def _chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OV
     start = 0
     while start < len(words):
         end = min(start + chunk_size, len(words))
-        chunks.append(" ".join(words[start:end]))
+        chunk = " ".join(words[start:end]).strip()
+        if chunk:
+            chunks.append(chunk)
         if end == len(words):
             break
         start = end - overlap

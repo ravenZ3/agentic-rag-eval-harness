@@ -39,8 +39,11 @@ for paper in fetch_arxiv_papers(max_results=args.max_results, full_text=not args
     if paper.get("chunk_index", 0) == 0:
         total_papers += 1
 
+    text = paper.get("text", "")
+    if not isinstance(text, str) or not text.strip():
+        continue
     doc = Document(
-        page_content=paper["text"],
+        page_content=text,
         metadata={k: _scalarize(v) for k, v in paper.items() if k != "text"},
     )
     batch.append(doc)
