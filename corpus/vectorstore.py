@@ -5,6 +5,7 @@ from langchain_core.documents import Document
 
 PERSIST_DIR = Path("data/chroma")
 COLLECTION_NAME = "arxiv_ml"
+INGEST_BATCH_SIZE = 100
 
 # all-MiniLM-L6-v2 already cached at ~/.cache/huggingface/hub/ — no download.
 _EMBEDDINGS = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
@@ -35,10 +36,9 @@ def ingest_papers(papers: list[dict]) -> None:
         )
         for p in papers
     ]
-    batch_size = 100
-    for i in range(0, len(docs), batch_size):
-        vs.add_documents(docs[i : i + batch_size])
-        print(f"  ingested {min(i + batch_size, len(docs))}/{len(docs)}")
+    for i in range(0, len(docs), INGEST_BATCH_SIZE):
+        vs.add_documents(docs[i : i + INGEST_BATCH_SIZE])
+        print(f"  ingested {min(i + INGEST_BATCH_SIZE, len(docs))}/{len(docs)}")
 
 
 def similarity_search(query: str, k: int = 4) -> list[str]:
